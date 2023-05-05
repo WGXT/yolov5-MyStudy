@@ -164,7 +164,10 @@ class BaseModel(nn.Module):
 
 class DetectionModel(BaseModel):
     # YOLOv5 detection model
-    def __init__(self, cfg='yolov5s.yaml', ch=3, nc=None, anchors=None):  # model, input channels, number of classes
+    def __init__(self, cfg='yolov5s.yaml', ch=3, nc=None, anchors=None):  
+    # 传参：model(yaml配置文件), input channels(ch输入通道), number of classes
+    
+        # 第一部分：加载yaml配置文件
         super().__init__()
         if isinstance(cfg, dict):
             self.yaml = cfg  # model dict
@@ -174,19 +177,22 @@ class DetectionModel(BaseModel):
             with open(cfg, encoding='ascii', errors='ignore') as f:
                 self.yaml = yaml.safe_load(f)  # model dict
 
-        # Define model
+        # 第二部分：通过配置文件搭建网络 Define model
         ch = self.yaml['ch'] = self.yaml.get('ch', ch)  # input channels
-        if nc and nc != self.yaml['nc']:
+        if nc and nc != self.yaml['nc']:# 判断传入的nc值（默认不传）是否与yaml文件中相同
             LOGGER.info(f"Overriding model.yaml nc={self.yaml['nc']} with nc={nc}")
-            self.yaml['nc'] = nc  # override yaml value
-        if anchors:
+            self.yaml['nc'] = nc  # override yaml value（函数传参覆盖yaml的值）
+        if anchors:# 跟nc同理
             LOGGER.info(f'Overriding model.yaml anchors with anchors={anchors}')
             self.yaml['anchors'] = round(anchors)  # override yaml value
+        # ☆重点：利用所有配置好的参数一层层搭建网络（parse_model函数）
         self.model, self.save = parse_model(deepcopy(self.yaml), ch=[ch])  # model, savelist
+        # 初始化每一类的类名
         self.names = [str(i) for i in range(self.yaml['nc'])]  # default names
+        # 从yaml文件中加载inplace关键字（没找到则返回true）
         self.inplace = self.yaml.get('inplace', True)
 
-        # Build strides, anchors
+        # 第三部分：Build strides, anchors
         m = self.model[-1]  # Detect()
         if isinstance(m, (Detect, Segment)):
             s = 256  # 2x min stride
@@ -260,7 +266,7 @@ class DetectionModel(BaseModel):
             b.data[:, 5:5 + m.nc] += math.log(0.6 / (m.nc - 0.99999)) if cf is None else torch.log(cf / cf.sum())  # cls
             mi.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
 
-
+# 保留 YOLOv5 'Model' 类以实现向后兼容，前几个版本的代码只有Detect和model两个类
 Model = DetectionModel  # retain YOLOv5 'Model' class for backwards compatibility
 
 
@@ -303,8 +309,8 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
     if act:
         Conv.default_act = eval(act)  # redefine default activation, i.e. Conv.default_act = nn.SiLU()
         LOGGER.info(f"{colorstr('activation:')} {act}")  # print
-    na = (len(anchors[0]) // 2) if isinstance(anchors, list) else anchors  # number of anchors
-    no = na * (nc + 5)  # number of outputs = anchors * (classes + 5)
+    na = (len(anchors[0]) // 2) if isinstance(anchors, list) else anchors  # number of anchors（3）
+    no = na * (nc + 5)  # number of outputs = anchors * (classes + 5) （3*(80+5)=255）
 
     layers, save, c2 = [], [], ch[-1]  # layers, savelist, ch out
     for i, (f, n, m, args) in enumerate(d['backbone'] + d['head']):  # from, number, module, args
@@ -371,7 +377,7 @@ if __name__ == '__main__':
 
     # Create model
     im = torch.rand(opt.batch_size, 3, 640, 640).to(device)
-    model = Model(opt.cfg).to(device)
+    model = Model(opt.cfg).to(device)# 模型初始化"Model = DetectionModel"源码选择了DetectionModel类
 
     # Options
     if opt.line_profile:  # profile layer by layer
