@@ -329,5 +329,7 @@ def run(**kwargs):
 
 
 if __name__ == '__main__':
+    # 报错解决：AttributeError: module '__main__' has no attribute '__spec__'（在jupter中运行classify/train.py，但cmd中运行没报错）
+    __spec__ = "ModuleSpec(name='builtins', loader=<class '_frozen_importlib.BuiltinImporter'>)"
     opt = parse_opt()
     main(opt)
