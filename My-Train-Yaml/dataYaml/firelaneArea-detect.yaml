@@ -1,0 +1,7 @@
+train: ../datasets/--------.v2i.yolov5pytorch/train/images
+val: ../datasets/--------.v2i.yolov5pytorch/valid/images
+test: ../datasets/--------.v2i.yolov5pytorch/test/images
+
+nc: 1
+names: ['FirelaneArea']
+
